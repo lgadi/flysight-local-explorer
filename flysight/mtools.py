@@ -238,6 +238,28 @@ def count_entries(raw_node: str, path: str) -> int:
     return sum(1 for line in out.splitlines() if line.strip())
 
 
+def tree_size(raw_node: str, path: str) -> int:
+    """Total bytes of all files under path (recursive). Returns 0 on failure."""
+    fat_path = _fat_dir_path(path) if path != "/" else "::/"
+    try:
+        out = _check(["mdir", "-/", "-a", "-i", raw_node, fat_path], timeout=180)
+    except MToolsError:
+        # Maybe path is a single file, not a dir — try that.
+        try:
+            out = _check(["mdir", "-a", "-i", raw_node, _fat_file_path(path)], timeout=30)
+        except MToolsError:
+            return 0
+    total = 0
+    for raw_line in out.splitlines():
+        m = _LINE_RE.match(raw_line.rstrip())
+        if m and m.group("size") != "<DIR>":
+            try:
+                total += int(m.group("size"))
+            except ValueError:
+                pass
+    return total
+
+
 def stream_copy_to_local(
     raw_node: str,
     fat_path: str,

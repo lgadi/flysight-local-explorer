@@ -7,14 +7,20 @@
   <p class="muted">No jobs yet.</p>
   {% endif %}
   {% for j in jobs %}
+  {% set pct = (100 * j.progress_done_bytes / j.progress_total_bytes) if j.progress_total_bytes else ((100 * j.progress_done / j.progress_total) if j.progress_total else 0) %}
   <article class="job status-{{ j.status }} {{ 'highlight' if j.id == highlight else '' }}" data-job-id="{{ j.id }}">
     <header>
       <span class="kind">{{ j.kind }}</span>
       <span class="label">{{ j.label }}</span>
       <span class="status">{{ j.status }}</span>
     </header>
-    <div class="progress-bar"><div class="bar" style="width: {{ (100 * j.progress_done / j.progress_total) if j.progress_total else 0 }}%"></div></div>
-    <div class="counts">{{ j.progress_done }}{% if j.progress_total %} / {{ j.progress_total }}{% endif %} items</div>
+    <div class="progress-bar"><div class="bar" style="width: {{ pct }}%"></div></div>
+    <div class="counts">
+      {% if j.progress_total_bytes %}
+        <span class="bytes">{{ j.progress_done_bytes|humanbytes }} / {{ j.progress_total_bytes|humanbytes }}</span>
+      {% endif %}
+      <span class="files">{{ j.progress_done }}{% if j.progress_total %} / {{ j.progress_total }}{% endif %} items</span>
+    </div>
     {% if j.error %}<pre class="error">{{ j.error }}</pre>{% endif %}
     <details>
       <summary>output (last 30 lines)</summary>
@@ -28,6 +34,13 @@
 {% block scripts %}
 <script>
   // Poll status for jobs that aren't finished yet.
+  function humanBytes(n) {
+    if (n === null || n === undefined) return "—";
+    const units = ["B", "KB", "MB", "GB", "TB"];
+    let i = 0;
+    while (Math.abs(n) >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+    return i === 0 ? `${Math.round(n)} B` : `${n.toFixed(1)} ${units[i]}`;
+  }
   function refresh(job) {
     const id = job.dataset.jobId;
     fetch(`/jobs/${id}.json`).then(r => r.ok ? r.json() : null).then(data => {
@@ -35,10 +48,22 @@
       job.classList.remove("status-pending", "status-running", "status-done", "status-error");
       job.classList.add(`status-${data.status}`);
       job.querySelector("header > .status").textContent = data.status;
-      const pct = data.progress_total ? (100 * data.progress_done / data.progress_total) : 0;
+      const pct = data.progress_total_bytes
+        ? (100 * data.progress_done_bytes / data.progress_total_bytes)
+        : (data.progress_total ? (100 * data.progress_done / data.progress_total) : 0);
       job.querySelector(".progress-bar .bar").style.width = pct + "%";
-      job.querySelector(".counts").textContent =
-        data.progress_done + (data.progress_total ? ` / ${data.progress_total}` : "") + " items";
+      const counts = job.querySelector(".counts");
+      counts.replaceChildren();
+      if (data.progress_total_bytes) {
+        const b = document.createElement("span");
+        b.className = "bytes";
+        b.textContent = `${humanBytes(data.progress_done_bytes)} / ${humanBytes(data.progress_total_bytes)}`;
+        counts.appendChild(b);
+      }
+      const f = document.createElement("span");
+      f.className = "files";
+      f.textContent = `${data.progress_done}${data.progress_total ? ` / ${data.progress_total}` : ""} items`;
+      counts.appendChild(f);
       const logEl = job.querySelector(".log");
       if (logEl) logEl.textContent = (data.log_tail || []).join("\n");
       if (data.status === "running" || data.status === "pending") {

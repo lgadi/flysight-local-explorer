@@ -183,7 +183,9 @@ article.job .progress-bar {
   overflow: hidden;
 }
 article.job .progress-bar .bar { height: 100%; background: var(--accent); width: 0%; transition: width .4s ease; }
-article.job .counts { font-size: 12px; color: var(--muted); margin-top: 4px; }
+article.job .counts { font-size: 12px; color: var(--muted); margin-top: 4px; display: flex; gap: 16px; }
+article.job .counts .bytes { font-variant-numeric: tabular-nums; color: var(--fg); }
+article.job .counts .files { font-variant-numeric: tabular-nums; }
 article.job .log { background: #1f1f1f; color: #e6e6e6; padding: 10px; font-size: 12px; max-height: 240px; overflow: auto; border-radius: 4px; }
 
 #job-toast {

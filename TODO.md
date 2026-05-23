@@ -16,11 +16,13 @@ that doesn't move the user experience.
       when any in-flight job transitions to done/error, and highlights
       green when the finished job is an upload to the current path (i.e.
       the user probably wants to see new files).
-- [ ] **Per-byte progress for long copies.** Today the progress bar
-      ticks once per file, so a single big file (a 200 MB `RAW.UBX` is
-      common) can sit at the same percentage for minutes. Pre-compute
-      total bytes from `mdir`, then have a sibling thread `stat()` the
-      destination tempfile to read bytes-written during the copy.
+- [x] **Per-byte progress for long copies.** Pre-computes total bytes
+      via `mtools.tree_size` (recursive `mdir -/` sum) for copy jobs and
+      from staging file sizes for upload jobs. Copy jobs run a 1-second
+      watcher thread that walks the destination to report bytes-written;
+      upload jobs increment as `Copying X` lines arrive, keyed by the
+      file's basename. UI prefers bytes-based progress and falls back to
+      file count when total bytes is unknown.
 
 ## P2 — quality of life
 

@@ -26,6 +26,8 @@ class Job:
     status: str = "pending"         # "pending" | "running" | "done" | "error"
     progress_done: int = 0          # files completed
     progress_total: int = 0         # files expected (0 if unknown)
+    progress_done_bytes: int = 0    # bytes copied so far
+    progress_total_bytes: int = 0   # bytes expected (0 if unknown)
     error: str | None = None
     started_at: float = 0.0
     finished_at: float | None = None
@@ -49,6 +51,8 @@ class Job:
                 "status": self.status,
                 "progress_done": self.progress_done,
                 "progress_total": self.progress_total,
+                "progress_done_bytes": self.progress_done_bytes,
+                "progress_total_bytes": self.progress_total_bytes,
                 "error": self.error,
                 "started_at": self.started_at,
                 "finished_at": self.finished_at,
@@ -95,6 +99,25 @@ def snapshot() -> list[dict[str, Any]]:
     return out
 
 
+def _walk_size(target_dir: str) -> int:
+    total = 0
+    for root, _, files in os.walk(target_dir):
+        for fn in files:
+            try:
+                total += os.path.getsize(os.path.join(root, fn))
+            except OSError:
+                pass
+    return total
+
+
+def _watch_local_dest(job: Job, target_dir: str, done_event: threading.Event) -> None:
+    while not done_event.wait(1.0):
+        try:
+            job.progress_done_bytes = _walk_size(target_dir)
+        except Exception:
+            pass
+
+
 def start_copy(raw_node: str, fat_path: str, local_dest: str) -> str:
     job = Job(
         id=uuid.uuid4().hex[:12],
@@ -107,9 +130,19 @@ def start_copy(raw_node: str, fat_path: str, local_dest: str) -> str:
 
     def run() -> None:
         job.status = "running"
+        done_event = threading.Event()
+        watcher: threading.Thread | None = None
         try:
-            total = mtools.count_entries(raw_node, fat_path)
-            job.progress_total = total
+            job.progress_total = mtools.count_entries(raw_node, fat_path)
+            job.progress_total_bytes = mtools.tree_size(raw_node, fat_path)
+            os.makedirs(local_dest, exist_ok=True)
+            watcher = threading.Thread(
+                target=_watch_local_dest,
+                args=(job, local_dest, done_event),
+                daemon=True,
+                name=f"watch-{job.id}",
+            )
+            watcher.start()
             for line in mtools.stream_copy_to_local(raw_node, fat_path, local_dest):
                 job.append_log(line)
                 if line.lower().startswith("copying ") or line.lower().startswith("copy "):
@@ -120,6 +153,14 @@ def start_copy(raw_node: str, fat_path: str, local_dest: str) -> str:
             job.error = str(exc)
             job.append_log(f"ERROR: {exc}")
         finally:
+            done_event.set()
+            if watcher is not None:
+                watcher.join(timeout=3)
+            # Final accurate byte count after watcher stops
+            try:
+                job.progress_done_bytes = _walk_size(local_dest)
+            except Exception:
+                pass
             job.finished_at = time.time()
 
     threading.Thread(target=run, daemon=True, name=f"copy-{job.id}").start()
@@ -141,6 +182,7 @@ def start_upload(raw_node: str, fat_dest: str, files: list) -> str:
         f.save(target)
         local_paths.append(target)
 
+    file_sizes = {os.path.basename(p): os.path.getsize(p) for p in local_paths}
     label = f"Upload {len(local_paths)} file(s)  →  {fat_dest}"
     job = Job(
         id=uuid.uuid4().hex[:12],
@@ -149,6 +191,7 @@ def start_upload(raw_node: str, fat_dest: str, files: list) -> str:
         fat_path=fat_dest,
         started_at=time.time(),
         progress_total=len(local_paths),
+        progress_total_bytes=sum(file_sizes.values()),
     )
     _register(job)
 
@@ -161,6 +204,13 @@ def start_upload(raw_node: str, fat_dest: str, files: list) -> str:
                 job.append_log(line)
                 if line.lower().startswith("copying ") or line.lower().startswith("copy "):
                     job.progress_done += 1
+                    # "Copying /tmp/staging/FOO.TXT" → look up FOO.TXT's size
+                    try:
+                        copied_path = line.split(maxsplit=1)[1]
+                        size = file_sizes.get(os.path.basename(copied_path), 0)
+                        job.progress_done_bytes += size
+                    except (IndexError, OSError):
+                        pass
             job.status = "done"
         except Exception as exc:
             job.status = "error"

@@ -11,6 +11,19 @@ def create_app() -> Flask:
     app = Flask(__name__)
     app.secret_key = secrets.token_hex(32)
 
+    @app.template_filter("humanbytes")
+    def humanbytes(n):
+        if n is None:
+            return "—"
+        n = float(n)
+        for unit in ("B", "KB", "MB", "GB", "TB"):
+            if abs(n) < 1024 or unit == "TB":
+                if unit == "B":
+                    return f"{int(n)} B"
+                return f"{n:.1f} {unit}"
+            n /= 1024
+        return f"{n:.1f} PB"
+
     @app.before_request
     def require_auth():
         if request.endpoint in {"auth", "static"}:
