@@ -10,6 +10,9 @@
 <section class="device-bar">
   <span class="label">{{ device.label }}</span>
   <span class="muted">{{ device.raw_node }} · {{ '%.1f GB'|format(device.size_bytes / 1e9) }}</span>
+  <form method="post" action="{{ url_for('eject') }}" class="inline confirm-eject device-eject">
+    <button type="submit">Eject</button>
+  </form>
 </section>
 
 <nav class="breadcrumbs">
@@ -120,6 +123,11 @@
         e.preventDefault();
         if (typed !== null) alert("Name didn't match — not deleted.");
       }
+    });
+  });
+  document.querySelectorAll("form.confirm-eject").forEach(f => {
+    f.addEventListener("submit", e => {
+      if (!confirm("Eject the card now? Any in-flight jobs will fail.")) e.preventDefault();
     });
   });
 

@@ -1,10 +1,16 @@
 {% extends "base.html" %}
-{% block title %}No FlySight detected{% endblock %}
+{% block title %}{{ "Ejected" if ejected else "No FlySight detected" }}{% endblock %}
 {% block content %}
 <section class="card narrow">
+  {% if ejected %}
+  <h1>Ejected</h1>
+  <p><code>{{ ejected_label or "FLYSIGHT" }}</code> has been ejected and can be safely unplugged.</p>
+  <p><a href="{{ url_for('index') }}">Reconnect</a> once you've replugged.</p>
+  {% else %}
   <h1>No FlySight detected</h1>
   <p>Couldn't find an external FAT partition labeled <code>FLYSIGHT</code>.</p>
   <p>Plug the device in via USB-C, wait a few seconds, then <a href="{{ url_for('index') }}">retry</a>.</p>
   <p class="hint">If your card is labeled something else, edit <code>EXPECTED_LABEL</code> in <code>flysight/device.py</code>.</p>
+  {% endif %}
 </section>
 {% endblock %}

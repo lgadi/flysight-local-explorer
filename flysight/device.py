@@ -13,6 +13,7 @@ EXPECTED_LABEL = "FLYSIGHT"
 class Device:
     raw_node: str          # /dev/rdisk4s1 (the FAT partition, raw)
     block_node: str        # /dev/disk4s1
+    whole_disk: str        # /dev/disk4 — for eject and disk-wide operations
     label: str
     size_bytes: int
 
@@ -24,12 +25,14 @@ def detect() -> Device | None:
     )
     plist = plistlib.loads(out)
     for disk in plist.get("AllDisksAndPartitions", []):
+        whole_ident = disk.get("DeviceIdentifier", "")
         for part in disk.get("Partitions", []):
             if part.get("VolumeName") == EXPECTED_LABEL:
                 ident = part["DeviceIdentifier"]
                 return Device(
                     raw_node=f"/dev/r{ident}",
                     block_node=f"/dev/{ident}",
+                    whole_disk=f"/dev/{whole_ident}" if whole_ident else "",
                     label=part.get("VolumeName") or "",
                     size_bytes=int(part.get("Size") or 0),
                 )

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import secrets
+import subprocess
 
 from flask import Flask, redirect, render_template, request, url_for
 
@@ -107,6 +108,21 @@ def create_app() -> Flask:
         mtools.delete(dev.raw_node, path, recursive=recursive)
         parent = path.rsplit("/", 1)[0] or "/"
         return redirect(url_for("index", path=parent))
+
+    @app.route("/eject", methods=["POST"])
+    def eject():
+        dev = device.detect_or_400()
+        if not dev.whole_disk:
+            return render_template("error.html", message="Couldn't determine the whole-disk node to eject.", device=dev), 500
+        result = subprocess.run(
+            ["diskutil", "eject", dev.whole_disk],
+            capture_output=True,
+            timeout=30,
+        )
+        if result.returncode != 0:
+            err = result.stderr.decode(errors="replace").strip() or result.stdout.decode(errors="replace").strip() or f"diskutil exited with status {result.returncode}"
+            return render_template("error.html", message=err, device=dev), 500
+        return render_template("no_device.html", ejected=True, ejected_label=dev.label)
 
     @app.route("/jobs")
     def jobs_view():

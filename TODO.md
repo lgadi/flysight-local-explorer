@@ -37,8 +37,11 @@ that doesn't move the user experience.
       Should be a settings page (or at minimum an env var) that lets
       the user set their preferred root once, with the per-copy stamp
       still appended. Persist to a small JSON file in `~/.config/`.
-- [ ] **Eject button.** Run `diskutil eject /dev/disk4` so the FlySight
-      can be unplugged cleanly from the UI.
+- [x] **Eject button.** Device bar has an Eject button (right-aligned)
+      that shells out to `diskutil eject <whole-disk>`. After eject the
+      no_device template shows a friendly "ejected, safe to unplug"
+      state with a Reconnect link. Confirmation dialog warns that
+      in-flight jobs will fail.
 - [x] **"Back to browse" button on completed jobs.** Completed
       (`done`/`error`) job cards now grow a row with `View <fat_path>
       on card` and `Browse root` buttons. The JS poller unhides the
