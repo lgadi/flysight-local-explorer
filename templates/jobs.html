@@ -22,6 +22,12 @@
       <span class="files">{{ j.progress_done }}{% if j.progress_total %} / {{ j.progress_total }}{% endif %} items</span>
     </div>
     {% if j.error %}<pre class="error">{{ j.error }}</pre>{% endif %}
+    <div class="actions" {% if j.status in ('running', 'pending') %}hidden{% endif %}>
+      {% if j.fat_path %}
+        <a class="button" href="{{ url_for('index', path=j.fat_path) }}">View <code>{{ j.fat_path }}</code> on card</a>
+      {% endif %}
+      <a class="button" href="{{ url_for('index') }}">Browse root</a>
+    </div>
     <details>
       <summary>output (last 30 lines)</summary>
       <pre class="log">{{ '\n'.join(j.log[-30:]) }}</pre>
@@ -66,6 +72,11 @@
       counts.appendChild(f);
       const logEl = job.querySelector(".log");
       if (logEl) logEl.textContent = (data.log_tail || []).join("\n");
+      const actions = job.querySelector(".actions");
+      if (actions) {
+        const terminal = data.status === "done" || data.status === "error";
+        actions.hidden = !terminal;
+      }
       if (data.status === "running" || data.status === "pending") {
         setTimeout(() => refresh(job), 2000);
       }

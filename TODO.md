@@ -39,11 +39,11 @@ that doesn't move the user experience.
       still appended. Persist to a small JSON file in `~/.config/`.
 - [ ] **Eject button.** Run `diskutil eject /dev/disk4` so the FlySight
       can be unplugged cleanly from the UI.
-- [ ] **"Back to browse" button on completed jobs.** Once a job's
-      status is `done` or `error`, the jobs-view card should grow a
-      button that navigates to `/?path=<fat_path>` (the source dir for
-      copies, the destination dir for uploads). Right now the user has
-      to use the header nav, which is one hop more than necessary.
+- [x] **"Back to browse" button on completed jobs.** Completed
+      (`done`/`error`) job cards now grow a row with `View <fat_path>
+      on card` and `Browse root` buttons. The JS poller unhides the
+      row when a job transitions to terminal status during a page
+      lifetime so users don't have to refresh.
 - [ ] **Touch button for folders with bogus 1980-00-00 dates.** When
       the FlySight's RTC isn't set, the dirs it creates get stamped
       with date 0 / time 0, and mdir renders that as `1980-00-00 0:00`.
