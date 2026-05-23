@@ -113,3 +113,26 @@ that doesn't move the user experience.
       at 50, but `Job.log` is bounded per-job; the registry should also
       persist completed-job rows to disk if we want history across
       restarts. Probably YAGNI for a personal tool.
+
+## Speculative / future direction
+
+- [ ] **Consider converting to a native macOS app.** The Flask web app
+      is the right MVP, but a native shell would integrate better with
+      macOS (dock icon, real `NSOpenPanel` for picking download
+      destinations, Keychain for the sudo password, optionally
+      bypassing `mtools` by talking to DiskArbitration / IOKit
+      directly). Paths in roughly increasing rewrite cost:
+
+      - **pywebview** — wraps a native `WKWebView` around the existing
+        Flask app. Smallest delta; mostly a packaging win.
+      - **Tauri / Electron** — bundle the web UI as a standalone app
+        with the venv and `mtools` embedded; can be signed and
+        notarized for distribution.
+      - **PyObjC** — native AppKit app in Python. Drops the web stack
+        but keeps the language.
+      - **SwiftUI** — full rewrite in Swift, best native feel. Lets
+        us use Apple frameworks to read/write the FAT volume directly,
+        which would also remove the `sudo` dance.
+
+      Worth doing only if this becomes a regular daily tool, not just
+      for occasional log pulls.
