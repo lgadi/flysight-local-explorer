@@ -11,10 +11,11 @@ that doesn't move the user experience.
       Directories are still grouped first within each sort; date sort
       tolerates the "1980-00-00" bogus-RTC marker by sorting it before
       any real date.
-- [ ] **Auto-refresh browse view when a job touches it.** When an
-      upload or copy finishes during a browse-page lifetime, surface a
-      small toast offering to refresh, so the user doesn't have to bounce
-      to /jobs and back.
+- [x] **Auto-refresh browse view when a job touches it.** Toast at the
+      top of the browse page polls `/jobs/snapshot.json` every 4 s, fires
+      when any in-flight job transitions to done/error, and highlights
+      green when the finished job is an upload to the current path (i.e.
+      the user probably wants to see new files).
 - [ ] **Per-byte progress for long copies.** Today the progress bar
       ticks once per file, so a single big file (a 200 MB `RAW.UBX` is
       common) can sit at the same percentage for minutes. Pre-compute

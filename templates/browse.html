@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 {% block title %}{{ path }} — flysight-local-explorer{% endblock %}
 {% block content %}
+<div id="job-toast" hidden>
+  <span class="msg"></span>
+  <button type="button" onclick="location.reload()">Refresh</button>
+  <button type="button" onclick="document.getElementById('job-toast').hidden = true">Dismiss</button>
+</div>
+
 <section class="device-bar">
   <span class="label">{{ device.label }}</span>
   <span class="muted">{{ device.raw_node }} · {{ '%.1f GB'|format(device.size_bytes / 1e9) }}</span>
@@ -116,5 +122,51 @@
       }
     });
   });
+
+  // Job-completion toaster. Polls /jobs/snapshot.json and surfaces
+  // transitions from in-flight to terminal as a small toast offering refresh.
+  (function () {
+    const TERMINAL = new Set(["done", "error"]);
+    const known = new Map();    // job_id -> last seen status
+    const notified = new Set(); // job_ids we've already toasted for
+    const currentPath = {{ path|tojson }};
+    const toast = document.getElementById("job-toast");
+    const msg = toast.querySelector(".msg");
+    let completed = [];
+
+    function showToast() {
+      if (!completed.length) return;
+      const label = completed.length === 1
+        ? `1 job completed (${completed[0].kind}${completed[0].relevant ? ", touches this view" : ""}).`
+        : `${completed.length} jobs completed.`;
+      msg.textContent = label;
+      toast.hidden = false;
+      toast.classList.toggle("relevant", completed.some(j => j.relevant));
+    }
+
+    function isRelevant(job) {
+      // Only uploads modify the card; copies (card→local) don't change the browse view.
+      if (job.kind !== "upload") return false;
+      const fp = job.fat_path || "";
+      if (!fp) return false;
+      return fp === currentPath || fp === currentPath + "/" || fp.startsWith(currentPath === "/" ? "/" : currentPath + "/");
+    }
+
+    function poll() {
+      fetch("/jobs/snapshot.json").then(r => r.ok ? r.json() : null).then(data => {
+        if (!data) return;
+        for (const j of data.jobs) {
+          const prev = known.get(j.id);
+          known.set(j.id, j.status);
+          if (!notified.has(j.id) && TERMINAL.has(j.status) && (prev === undefined || !TERMINAL.has(prev))) {
+            notified.add(j.id);
+            completed.push({id: j.id, kind: j.kind, status: j.status, relevant: isRelevant(j)});
+          }
+        }
+        showToast();
+      }).catch(() => {}).finally(() => setTimeout(poll, 4000));
+    }
+    poll();
+  })();
 </script>
 {% endblock %}

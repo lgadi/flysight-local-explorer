@@ -186,6 +186,25 @@ article.job .progress-bar .bar { height: 100%; background: var(--accent); width:
 article.job .counts { font-size: 12px; color: var(--muted); margin-top: 4px; }
 article.job .log { background: #1f1f1f; color: #e6e6e6; padding: 10px; font-size: 12px; max-height: 240px; overflow: auto; border-radius: 4px; }
 
+#job-toast {
+  position: sticky;
+  top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: #fff8d6;
+  border: 1px solid #d8c97a;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  z-index: 10;
+}
+#job-toast[hidden] { display: none; }
+#job-toast.relevant { background: #e3f0e0; border-color: #95c189; }
+#job-toast .msg { flex: 1; }
+
 pre { white-space: pre-wrap; word-wrap: break-word; }
 code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; background: #f0efe8; padding: 1px 4px; border-radius: 3px; }
 h1 { font-size: 18px; margin: 0 0 12px; }

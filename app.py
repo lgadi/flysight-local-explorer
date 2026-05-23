@@ -106,6 +106,10 @@ def create_app() -> Flask:
             return {"error": "not_found"}, 404
         return job.as_dict()
 
+    @app.route("/jobs/snapshot.json")
+    def jobs_snapshot():
+        return {"jobs": jobs.snapshot()}
+
     return app
 
 

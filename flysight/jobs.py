@@ -22,6 +22,7 @@ class Job:
     id: str
     kind: str                       # "copy" | "upload"
     label: str                      # short description for UI
+    fat_path: str = ""              # for copies: src on card; for uploads: dest dir on card
     status: str = "pending"         # "pending" | "running" | "done" | "error"
     progress_done: int = 0          # files completed
     progress_total: int = 0         # files expected (0 if unknown)
@@ -44,6 +45,7 @@ class Job:
                 "id": self.id,
                 "kind": self.kind,
                 "label": self.label,
+                "fat_path": self.fat_path,
                 "status": self.status,
                 "progress_done": self.progress_done,
                 "progress_total": self.progress_total,
@@ -78,11 +80,27 @@ def recent(n: int = 5) -> list[Job]:
     return all()[:n]
 
 
+def snapshot() -> list[dict[str, Any]]:
+    """Minimal status dump for all known jobs — used by the browse-page poller."""
+    out: list[dict[str, Any]] = []
+    for j in all():
+        with j._lock:
+            out.append({
+                "id": j.id,
+                "kind": j.kind,
+                "fat_path": j.fat_path,
+                "status": j.status,
+                "finished_at": j.finished_at,
+            })
+    return out
+
+
 def start_copy(raw_node: str, fat_path: str, local_dest: str) -> str:
     job = Job(
         id=uuid.uuid4().hex[:12],
         kind="copy",
         label=f"Copy {fat_path}  →  {local_dest}",
+        fat_path=fat_path,
         started_at=time.time(),
     )
     _register(job)
@@ -128,6 +146,7 @@ def start_upload(raw_node: str, fat_dest: str, files: list) -> str:
         id=uuid.uuid4().hex[:12],
         kind="upload",
         label=label,
+        fat_path=fat_dest,
         started_at=time.time(),
         progress_total=len(local_paths),
     )
@@ -160,6 +179,7 @@ __all__ = [
     "all",
     "get",
     "recent",
+    "snapshot",
     "start_copy",
     "start_upload",
 ]
