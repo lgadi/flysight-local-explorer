@@ -38,6 +38,12 @@ def create_app() -> Flask:
     @app.route("/")
     def index():
         path = request.args.get("path", "/")
+        sort = request.args.get("sort", "name")
+        direction = request.args.get("dir", "asc")
+        if sort not in mtools.SORT_KEYS:
+            sort = "name"
+        if direction not in ("asc", "desc"):
+            direction = "asc"
         dev = device.detect()
         if dev is None:
             return render_template("no_device.html")
@@ -45,6 +51,7 @@ def create_app() -> Flask:
             entries = mtools.list_dir(dev.raw_node, path)
         except mtools.MToolsError as exc:
             return render_template("error.html", message=str(exc), device=dev), 500
+        entries = mtools.sort_entries(entries, sort, direction)
         return render_template(
             "browse.html",
             device=dev,
@@ -53,6 +60,8 @@ def create_app() -> Flask:
             breadcrumbs=_crumbs(path),
             default_dest=_default_dest_for(path),
             jobs=jobs.recent(),
+            sort=sort,
+            direction=direction,
         )
 
     @app.route("/download")

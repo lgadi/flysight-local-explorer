@@ -94,6 +94,16 @@ table.entries th {
   border-bottom: 1px solid var(--border);
   padding: 8px;
 }
+table.entries th.sortable a {
+  color: var(--fg);
+  text-decoration: none;
+  display: inline-block;
+}
+table.entries th.sortable a:hover { color: var(--accent); }
+table.entries th.sortable.active a { color: var(--accent); }
+table.entries th.num { text-align: right; }
+table.entries th.num.sortable a { text-align: right; }
+.sort-indicator { color: var(--accent); margin-left: 4px; font-size: 11px; }
 table.entries td {
   padding: 6px 8px;
   border-bottom: 1px solid #f0f0ec;

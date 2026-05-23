@@ -6,10 +6,11 @@ that doesn't move the user experience.
 
 ## P1 — do next
 
-- [ ] **Sortable column headers in browse view.** Clickable
+- [x] **Sortable column headers in browse view.** Clickable
       Name / Size / Modified headers that toggle ascending / descending.
-      Today the order is hardcoded (dirs first, then alphabetical case-
-      insensitive in `_parse_mdir`).
+      Directories are still grouped first within each sort; date sort
+      tolerates the "1980-00-00" bogus-RTC marker by sorting it before
+      any real date.
 - [ ] **Auto-refresh browse view when a job touches it.** When an
       upload or copy finishes during a browse-page lifetime, surface a
       small toast offering to refresh, so the user doesn't have to bounce

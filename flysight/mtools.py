@@ -134,6 +134,46 @@ def _parse_mdir(output: str) -> list[Entry]:
     return entries
 
 
+SORT_KEYS = ("name", "size", "date")
+
+
+def sort_entries(entries: list[Entry], sort: str, direction: str, dirs_first: bool = True) -> list[Entry]:
+    """Sort entries by the chosen key + direction. Directories are grouped at the top by default."""
+    sort = sort if sort in SORT_KEYS else "name"
+    reverse = direction == "desc"
+
+    def name_key(e: Entry) -> tuple:
+        return (e.name.lower(),)
+
+    def size_key(e: Entry) -> tuple:
+        # Dirs (size=None) sort as 0 alongside zero-byte files; usually the
+        # dirs_first grouping above means they don't visually overlap files
+        # at the same size.
+        return (e.size if e.size is not None else 0,)
+
+    def date_key(e: Entry) -> tuple:
+        # Parse YYYY-MM-DD and H:MM into a tuple; tolerate the "1980-00-00"
+        # bogus-RTC marker by leaving its components at 0, which sorts before
+        # any real date.
+        try:
+            y, mo, d = (int(x) for x in e.date.split("-"))
+        except ValueError:
+            y, mo, d = 0, 0, 0
+        try:
+            h, mi = (int(x) for x in e.time.split(":"))
+        except ValueError:
+            h, mi = 0, 0
+        return (y, mo, d, h, mi, e.name.lower())
+
+    key_fn = {"name": name_key, "size": size_key, "date": date_key}[sort]
+
+    if dirs_first:
+        dirs = sorted([e for e in entries if e.is_dir], key=key_fn, reverse=reverse)
+        files = sorted([e for e in entries if not e.is_dir], key=key_fn, reverse=reverse)
+        return dirs + files
+    return sorted(entries, key=key_fn, reverse=reverse)
+
+
 def _short_to_dotted(sname: str) -> str:
     # "AUDIO" -> "AUDIO"; "FLYSIGHT TXT" -> "FLYSIGHT.TXT"
     parts = sname.split()

@@ -16,10 +16,22 @@
   {% endfor %}
 </nav>
 
+{% macro sort_header(key, label, css='') %}
+  {% set next_dir = 'desc' if sort == key and direction == 'asc' else 'asc' %}
+  {% set indicator = '↑' if (sort == key and direction == 'asc') else ('↓' if sort == key else '') %}
+  <th class="{{ css }} sortable {{ 'active' if sort == key else '' }}">
+    <a href="{{ url_for('index', path=path, sort=key, dir=next_dir) }}">{{ label }} <span class="sort-indicator">{{ indicator }}</span></a>
+  </th>
+{% endmacro %}
 <section class="card">
   <table class="entries">
     <thead>
-      <tr><th>Name</th><th class="num">Size</th><th>Modified</th><th class="actions">Actions</th></tr>
+      <tr>
+        {{ sort_header('name', 'Name') }}
+        {{ sort_header('size', 'Size', 'num') }}
+        {{ sort_header('date', 'Modified') }}
+        <th class="actions">Actions</th>
+      </tr>
     </thead>
     <tbody>
       {% for e in entries %}
