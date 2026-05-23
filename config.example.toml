@@ -1,0 +1,42 @@
+# flysight-local-explorer config
+#
+# Copy this file to ./config.toml or ~/.config/flysight-local-explorer/config.toml
+# and uncomment / edit the values you want to override. Anything left out
+# falls back to the defaults shown here.
+
+[device]
+# Partition label to auto-detect. The app picks the first external FAT
+# partition with this label.
+# label = "FLYSIGHT"
+
+# If true, when no partition with `label` is found, the app picks the
+# first external FAT partition under `max_size_gb` GB instead. Useful if
+# your card is unlabeled or labeled something else. (Not wired up yet.)
+# fallback_to_first_fat = false
+# max_size_gb = 64
+
+[server]
+# host = "127.0.0.1"   # bind address — keep localhost unless you know what you're doing
+# port = 5000
+
+[ui]
+# Folder under which each download lands in a timestamped subdirectory.
+# default_download_root = "~/Downloads/flysight"
+
+# How often the browse page polls /jobs/snapshot.json for the
+# completion toast. (Not wired up yet — currently hardcoded to 4s.)
+# browse_poll_seconds = 4
+
+[security]
+# Minutes of idle time before the cached sudo password is forgotten.
+# Set to 0 to never time out. (Not wired up yet — password is forgotten
+# only on server restart.)
+# sudo_idle_timeout_minutes = 30
+
+[jobs]
+# How many recent jobs to keep in the in-process registry. Oldest are
+# dropped past this cap.
+# max_history = 50
+
+# Cap on per-job log buffer.
+# max_log_lines = 500

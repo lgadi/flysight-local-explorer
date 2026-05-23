@@ -8,9 +8,9 @@
   <p><a href="{{ url_for('index') }}">Reconnect</a> once you've replugged.</p>
   {% else %}
   <h1>No FlySight detected</h1>
-  <p>Couldn't find an external FAT partition labeled <code>FLYSIGHT</code>.</p>
+  <p>Couldn't find an external FAT partition labeled <code>{{ expected_label }}</code>.</p>
   <p>Plug the device in via USB-C, wait a few seconds, then <a href="{{ url_for('index') }}">retry</a>.</p>
-  <p class="hint">If your card is labeled something else, edit <code>EXPECTED_LABEL</code> in <code>flysight/device.py</code>.</p>
+  <p class="hint">If your card is labeled something else, set <code>[device].label</code> in <code>config.toml</code> — see <code>config.example.toml</code> for the template.</p>
   {% endif %}
 </section>
 {% endblock %}

@@ -55,6 +55,18 @@ the app can `sudo mcopy` / `sudo mdir` against the raw block device. The
 password is kept in process memory only, never written to disk, and is
 discarded when you stop the server.
 
+## Configuration
+
+A `config.toml` is optional. If you want to override the partition
+label, the server bind address, the default download root, or other
+knobs, copy `config.example.toml` to one of these paths:
+
+- `./config.toml` (next to `app.py`) — checked first
+- `~/.config/flysight-local-explorer/config.toml`
+
+…and uncomment the keys you want to change. The file is read once at
+startup; anything you don't set falls back to the documented defaults.
+
 ## Security notes
 
 - The server binds to `127.0.0.1` only; nothing on the network can reach it.

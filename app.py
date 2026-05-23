@@ -5,7 +5,7 @@ import subprocess
 
 from flask import Flask, redirect, render_template, request, url_for
 
-from flysight import device, jobs, mtools, sudo_auth
+from flysight import config, device, jobs, mtools, sudo_auth
 
 
 def create_app() -> Flask:
@@ -60,7 +60,7 @@ def create_app() -> Flask:
             direction = "asc"
         dev = device.detect()
         if dev is None:
-            return render_template("no_device.html")
+            return render_template("no_device.html", expected_label=config.get().device.label)
         try:
             entries = mtools.list_dir(dev.raw_node, path)
         except mtools.MToolsError as exc:
@@ -158,8 +158,10 @@ def _default_dest_for(path: str) -> str:
 
     leaf = path.strip("/").replace("/", "_") or "root"
     stamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
-    return os.path.expanduser(f"~/Downloads/flysight/{stamp}-{leaf}")
+    root = os.path.expanduser(config.get().ui.default_download_root)
+    return os.path.join(root, f"{stamp}-{leaf}")
 
 
 if __name__ == "__main__":
-    create_app().run(host="127.0.0.1", port=5000, debug=False)
+    cfg = config.get()
+    create_app().run(host=cfg.server.host, port=cfg.server.port, debug=False)

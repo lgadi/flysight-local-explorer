@@ -32,11 +32,9 @@ that doesn't move the user experience.
       it needs queueing so one user click doesn't kick off 30 mtools
       processes at once. The existing `_op_lock` handles the serialisation;
       we just need to dispatch the loop on a worker thread.
-- [ ] **User-configurable default copy destination.** Today
-      `_default_dest_for` in `app.py` hardcodes `~/Downloads/flysight/`.
-      Should be a settings page (or at minimum an env var) that lets
-      the user set their preferred root once, with the per-copy stamp
-      still appended. Persist to a small JSON file in `~/.config/`.
+- [x] **User-configurable default copy destination.** Now driven by
+      `[ui].default_download_root` in `config.toml`. See the config
+      infrastructure item below.
 - [x] **Eject button.** Device bar has an Eject button (right-aligned)
       that shells out to `diskutil eject <whole-disk>`. After eject the
       no_device template shows a friendly "ejected, safe to unplug"
@@ -60,7 +58,18 @@ that doesn't move the user experience.
       is doable but fiddly; alternatives are `pyfat` (Python lib) or
       `fattools`. UI surfaces the action only for entries whose mtime
       is the literal 1980-00-00 sentinel.
-- [ ] **Move runtime knobs to a `config.toml` file.** Today values
+- [x] **Move runtime knobs to a `config.toml` file.** Initial pass:
+      `flysight/config.py` loads TOML from `./config.toml` →
+      `~/.config/flysight-local-explorer/config.toml` and falls back
+      to baked-in defaults. Currently wired keys: `[device].label`,
+      `[server].host` / `[server].port`, and
+      `[ui].default_download_root`. Other keys are accepted but not
+      yet wired (browse_poll_seconds, sudo_idle_timeout_minutes,
+      jobs.max_history / max_log_lines, device fallback) — they'll
+      come online with their respective TODO items.
+
+- [ ] **Original detailed config plan (kept for reference, partly
+      complete):**
       like the expected partition label, the server port, the default
       download root, and various caps are hardcoded in source. A small
       TOML file (search order `./config.toml` → `~/.config/flysight-local-explorer/config.toml`)

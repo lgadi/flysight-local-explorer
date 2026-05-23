@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from flask import abort
 
-EXPECTED_LABEL = "FLYSIGHT"
+from . import config
 
 
 @dataclass(frozen=True)
@@ -19,6 +19,7 @@ class Device:
 
 
 def detect() -> Device | None:
+    expected_label = config.get().device.label
     out = subprocess.check_output(
         ["diskutil", "list", "-plist", "external", "physical"],
         timeout=10,
@@ -27,7 +28,7 @@ def detect() -> Device | None:
     for disk in plist.get("AllDisksAndPartitions", []):
         whole_ident = disk.get("DeviceIdentifier", "")
         for part in disk.get("Partitions", []):
-            if part.get("VolumeName") == EXPECTED_LABEL:
+            if part.get("VolumeName") == expected_label:
                 ident = part["DeviceIdentifier"]
                 return Device(
                     raw_node=f"/dev/r{ident}",
@@ -42,5 +43,6 @@ def detect() -> Device | None:
 def detect_or_400() -> Device:
     dev = detect()
     if dev is None:
-        abort(400, description=f"No FlySight device detected (no external FAT partition labeled {EXPECTED_LABEL}).")
+        label = config.get().device.label
+        abort(400, description=f"No FlySight device detected (no external FAT partition labeled {label}).")
     return dev
