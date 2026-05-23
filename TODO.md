@@ -68,32 +68,6 @@ that doesn't move the user experience.
       jobs.max_history / max_log_lines, device fallback) — they'll
       come online with their respective TODO items.
 
-- [ ] **Original detailed config plan (kept for reference, partly
-      complete):**
-      like the expected partition label, the server port, the default
-      download root, and various caps are hardcoded in source. A small
-      TOML file (search order `./config.toml` → `~/.config/flysight-local-explorer/config.toml`)
-      loaded at startup via `tomllib` should drive these, with sensible
-      defaults baked in so a missing file is fine:
-
-      | Section | Key | Default | What |
-      |---|---|---|---|
-      | `[device]` | `label` | `"FLYSIGHT"` | Partition label to auto-detect |
-      | `[device]` | `fallback_to_first_fat` | `false` | If labeled disk isn't found, use the first external FAT under `max_size_gb` |
-      | `[device]` | `max_size_gb` | `64` | Upper bound for the fallback heuristic |
-      | `[server]` | `host` | `"127.0.0.1"` | Bind address (keep localhost by default) |
-      | `[server]` | `port` | `5000` | Bind port |
-      | `[ui]` | `default_download_root` | `"~/Downloads/flysight"` | Used by `_default_dest_for` |
-      | `[ui]` | `browse_poll_seconds` | `4` | Browse-page job-poll interval |
-      | `[security]` | `sudo_idle_timeout_minutes` | `30` | `0` disables; pairs with the sudo-timeout item in P3 |
-      | `[jobs]` | `max_history` | `50` | Cap on jobs kept in the in-process registry |
-      | `[jobs]` | `max_log_lines` | `500` | Cap on per-job log buffer |
-
-      Also ship a `config.example.toml` in the repo with the defaults
-      documented inline. This supersedes the *user-configurable default
-      copy destination* item above and is the storage backend for the
-      *label fallback* and *sudo idle timeout* items in P3.
-
 ## P3 — robustness
 
 - [ ] **Friendly errors when mtools isn't installed** or when sudo is
