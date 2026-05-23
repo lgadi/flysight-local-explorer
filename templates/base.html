@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}flysight-local-explorer{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <a class="brand" href="{{ url_for('index') }}">flysight-local-explorer</a>
+    <nav>
+      <a href="{{ url_for('jobs_view') }}">Jobs</a>
+      {% if request.endpoint != 'auth' %}
+      <form method="post" action="{{ url_for('logout') }}" class="inline">
+        <button type="submit" class="linklike">Forget sudo password</button>
+      </form>
+      {% endif %}
+    </nav>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

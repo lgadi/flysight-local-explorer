@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Jobs — flysight-local-explorer{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Jobs</h1>
+  {% if not jobs %}
+  <p class="muted">No jobs yet.</p>
+  {% endif %}
+  {% for j in jobs %}
+  <article class="job status-{{ j.status }} {{ 'highlight' if j.id == highlight else '' }}" data-job-id="{{ j.id }}">
+    <header>
+      <span class="kind">{{ j.kind }}</span>
+      <span class="label">{{ j.label }}</span>
+      <span class="status">{{ j.status }}</span>
+    </header>
+    <div class="progress-bar"><div class="bar" style="width: {{ (100 * j.progress_done / j.progress_total) if j.progress_total else 0 }}%"></div></div>
+    <div class="counts">{{ j.progress_done }}{% if j.progress_total %} / {{ j.progress_total }}{% endif %} items</div>
+    {% if j.error %}<pre class="error">{{ j.error }}</pre>{% endif %}
+    <details>
+      <summary>output (last 30 lines)</summary>
+      <pre class="log">{{ '\n'.join(j.log[-30:]) }}</pre>
+    </details>
+  </article>
+  {% endfor %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Poll status for jobs that aren't finished yet.
+  function refresh(job) {
+    const id = job.dataset.jobId;
+    fetch(`/jobs/${id}.json`).then(r => r.ok ? r.json() : null).then(data => {
+      if (!data) return;
+      job.classList.remove("status-pending", "status-running", "status-done", "status-error");
+      job.classList.add(`status-${data.status}`);
+      job.querySelector("header > .status").textContent = data.status;
+      const pct = data.progress_total ? (100 * data.progress_done / data.progress_total) : 0;
+      job.querySelector(".progress-bar .bar").style.width = pct + "%";
+      job.querySelector(".counts").textContent =
+        data.progress_done + (data.progress_total ? ` / ${data.progress_total}` : "") + " items";
+      const logEl = job.querySelector(".log");
+      if (logEl) logEl.textContent = (data.log_tail || []).join("\n");
+      if (data.status === "running" || data.status === "pending") {
+        setTimeout(() => refresh(job), 2000);
+      }
+    }).catch(() => setTimeout(() => refresh(job), 5000));
+  }
+  document.querySelectorAll("article.job.status-running, article.job.status-pending").forEach(refresh);
+</script>
+{% endblock %}

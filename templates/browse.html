@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}{{ path }} — flysight-local-explorer{% endblock %}
+{% block content %}
+<section class="device-bar">
+  <span class="label">{{ device.label }}</span>
+  <span class="muted">{{ device.raw_node }} · {{ '%.1f GB'|format(device.size_bytes / 1e9) }}</span>
+</section>
+
+<nav class="breadcrumbs">
+  {% for href, label in breadcrumbs %}
+    {% if not loop.last %}
+      <a href="{{ url_for('index', path=href) }}">{{ label }}</a><span class="sep">/</span>
+    {% else %}
+      <span class="here">{{ label }}</span>
+    {% endif %}
+  {% endfor %}
+</nav>
+
+<section class="card">
+  <table class="entries">
+    <thead>
+      <tr><th>Name</th><th class="num">Size</th><th>Modified</th><th class="actions">Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for e in entries %}
+      <tr class="{{ 'dir' if e.is_dir else 'file' }}">
+        <td>
+          {% if e.is_dir %}
+            <a href="{{ url_for('index', path=(path.rstrip('/') + '/' + e.name) if path != '/' else '/' + e.name) }}">{{ e.name }}/</a>
+          {% else %}
+            <span>{{ e.name }}</span>
+          {% endif %}
+        </td>
+        <td class="num">{{ '%d'|format(e.size) if e.size is not none else '—' }}</td>
+        <td class="mtime">{{ e.date }} {{ e.time }}</td>
+        <td class="actions">
+          {% set entry_path = (path.rstrip('/') + '/' + e.name) if path != '/' else '/' + e.name %}
+          {% if e.is_dir %}
+            <form method="post" action="{{ url_for('copy') }}" class="inline">
+              <input type="hidden" name="path" value="{{ entry_path }}">
+              <input type="text" name="dest" value="{{ default_dest }}" class="dest-input" title="mcopy will create '{{ e.name }}/' inside this directory">
+              <button type="submit">Copy folder</button>
+            </form>
+            <form method="post" action="{{ url_for('delete') }}" class="inline confirm-tree" data-name="{{ e.name }}">
+              <input type="hidden" name="path" value="{{ entry_path }}">
+              <input type="hidden" name="recursive" value="1">
+              <button type="submit" class="danger">Delete folder…</button>
+            </form>
+          {% else %}
+            <a class="button" href="{{ url_for('download_file', path=entry_path) }}">Download</a>
+            <form method="post" action="{{ url_for('delete') }}" class="inline confirm-simple">
+              <input type="hidden" name="path" value="{{ entry_path }}">
+              <button type="submit" class="danger">Delete</button>
+            </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="muted">empty directory</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="card">
+  <h2>Upload to <code>{{ path }}</code></h2>
+  <form method="post" action="{{ url_for('upload') }}" enctype="multipart/form-data">
+    <input type="hidden" name="dest" value="{{ path }}">
+    <input type="file" name="files" multiple required>
+    <button type="submit">Upload</button>
+  </form>
+</section>
+
+{% if jobs %}
+<section class="card">
+  <h2>Recent jobs</h2>
+  <ul class="job-mini">
+    {% for j in jobs %}
+    <li class="status-{{ j.status }}">
+      <a href="{{ url_for('jobs_view', highlight=j.id) }}">{{ j.label }}</a>
+      <span class="status">{{ j.status }}</span>
+      {% if j.progress_total %}<span class="progress">{{ j.progress_done }}/{{ j.progress_total }}</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll("form.confirm-simple").forEach(f => {
+    f.addEventListener("submit", e => {
+      if (!confirm("Delete this file?")) e.preventDefault();
+    });
+  });
+  document.querySelectorAll("form.confirm-tree").forEach(f => {
+    f.addEventListener("submit", e => {
+      const name = f.dataset.name || "this folder";
+      const typed = prompt(`Type the folder name to delete it recursively:\n\n${name}`);
+      if (typed !== name) {
+        e.preventDefault();
+        if (typed !== null) alert("Name didn't match — not deleted.");
+      }
+    });
+  });
+</script>
+{% endblock %}

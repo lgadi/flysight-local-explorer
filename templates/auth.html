@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Sign in — flysight-local-explorer{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>sudo password</h1>
+  <p>This app shells out to <code>mtools</code> against the FlySight's raw block device, which requires <code>sudo</code>. Your macOS account password is held in memory for the lifetime of this Python process only — never written to disk or to a cookie.</p>
+  {% if error %}
+  <p class="error">{{ error }}</p>
+  {% endif %}
+  <form method="post" action="{{ url_for('auth') }}">
+    <input type="hidden" name="next" value="{{ next }}">
+    <label>
+      Password
+      <input type="password" name="password" autofocus required autocomplete="current-password">
+    </label>
+    <button type="submit">Unlock</button>
+  </form>
+</section>
+{% endblock %}
