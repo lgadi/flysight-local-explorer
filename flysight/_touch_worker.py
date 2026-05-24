@@ -29,6 +29,13 @@ def main(argv: list[str]) -> int:
 
     target = datetime.combine(d, _time(0, 0, 0), tzinfo=timezone.utc)
 
+    # macOS character devices (/dev/rdisk*) require 512-byte aligned
+    # I/O, and pyfatfs does unaligned seeks (e.g. seek(510) to write
+    # the boot signature). Swap to the block device, which the kernel
+    # buffers for arbitrary offsets.
+    if device.startswith("/dev/rdisk"):
+        device = "/dev/disk" + device[len("/dev/rdisk"):]
+
     # Imported here (post arg-check) so a missing dep yields a clearer
     # error. Suppress PyFilesystem2's pkg_resources deprecation warning
     # which spams stderr on every invocation.
