@@ -34,6 +34,12 @@ def touch(raw_node: str, fat_path: str, new_date: date) -> None:
             capture_output=True,
             timeout=600,
         )
+    # Surface the worker's stderr (timing instrumentation, pyfatfs
+    # warnings) to the Flask process's stderr regardless of exit
+    # status, so the user can see what's happening.
+    if result.stderr:
+        sys.stderr.write(result.stderr.decode(errors="replace"))
+        sys.stderr.flush()
     if result.returncode != 0:
         err = result.stderr.decode(errors="replace").strip() or f"touch exited {result.returncode}"
         raise MToolsError(f"touch {fat_path}: {err}")
