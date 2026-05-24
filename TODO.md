@@ -61,6 +61,22 @@ that doesn't move the user experience.
       so root surface stays minimal; the worker grabs the global
       mtools op-lock to avoid interleaving with mtools writes on the
       same device.
+- [ ] **Bulk touch.** A single touch open/scan/close is ~3.5 min on
+      the live USB-FS device because pyfatfs walks the FAT
+      structure on open. Extend `_touch_worker.py` and `fat_ops.touch`
+      to accept an array of `(path, YYYY-MM-DD)` pairs and process
+      them all in one open. Adds a "Fix all → name-parsed dates"
+      button somewhere in the browse view (probably next to the
+      device bar or as a bulk-action when multiple bogus dirs are
+      selected). Going from "10 dirs × 3.5 min" to "10 dirs in one
+      ~4–5 min batch" is the main payoff.
+- [ ] **Touch as a background job.** Today /touch is synchronous —
+      the browser hangs for minutes while the worker runs. Wrap it
+      in the same `jobs.py` machinery as copy/upload so the UI
+      stays responsive: POST /touch returns a redirect to /jobs,
+      progress visible there, success toast on the browse page when
+      it lands. Works well in combination with the bulk-touch item
+      above (one job for the whole batch).
 - [x] **Move runtime knobs to a `config.toml` file.** Initial pass:
       `flysight/config.py` loads TOML from `./config.toml` →
       `~/.config/flysight-local-explorer/config.toml` and falls back
