@@ -152,14 +152,16 @@ def _crumbs(path: str) -> list[tuple[str, str]]:
     return crumbs
 
 
-def _default_dest_for(path: str) -> str:
+def _default_dest_for(_path: str) -> str:
+    """Default download destination: <root>/<YYYY-MM-DD>/. mcopy creates the
+    source folder name as a subdir inside this, so e.g. copying ::/24-02-24
+    on 2026-05-24 lands in ~/Downloads/flysight/2026-05-24/24-02-24/."""
     import os
     from datetime import datetime
 
-    leaf = path.strip("/").replace("/", "_") or "root"
-    stamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
+    stamp = datetime.now().strftime("%Y-%m-%d")
     root = os.path.expanduser(config.get().ui.default_download_root)
-    return os.path.join(root, f"{stamp}-{leaf}")
+    return os.path.join(root, stamp)
 
 
 if __name__ == "__main__":
