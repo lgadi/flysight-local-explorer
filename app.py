@@ -5,12 +5,27 @@ import subprocess
 
 from flask import Flask, redirect, render_template, request, url_for
 
-from flysight import config, device, jobs, mtools, sudo_auth
+from flysight import config, device, fat_ops, jobs, mtools, sudo_auth
 
 
 def create_app() -> Flask:
     app = Flask(__name__)
     app.secret_key = secrets.token_hex(32)
+
+    @app.template_filter("fix_date_for")
+    def fix_date_for(folder_name: str) -> str:
+        """Given a folder name, return YYYY-MM-DD: parsed from name if it
+        matches the FlySight YY-MM-DD convention, otherwise today."""
+        import re
+        from datetime import date
+        m = re.match(r"^(\d{2})-(\d{2})-(\d{2})$", folder_name or "")
+        if m:
+            yy, mm, dd = (int(x) for x in m.groups())
+            try:
+                return date(2000 + yy, mm, dd).isoformat()
+            except ValueError:
+                pass
+        return date.today().isoformat()
 
     @app.template_filter("humanbytes")
     def humanbytes(n):
@@ -123,6 +138,23 @@ def create_app() -> Flask:
         recursive = request.form.get("recursive") == "1"
         dev = device.detect_or_400()
         mtools.delete(dev.raw_node, path, recursive=recursive)
+        parent = path.rsplit("/", 1)[0] or "/"
+        return redirect(url_for("index", path=parent))
+
+    @app.route("/touch", methods=["POST"])
+    def touch():
+        from datetime import date
+        path = request.form["path"]
+        new_date_str = request.form["new_date"]
+        try:
+            new_date = date.fromisoformat(new_date_str)
+        except ValueError:
+            return render_template("error.html", message=f"Invalid date: {new_date_str}", device=device.detect()), 400
+        dev = device.detect_or_400()
+        try:
+            fat_ops.touch(dev.raw_node, path, new_date)
+        except mtools.MToolsError as exc:
+            return render_template("error.html", message=str(exc), device=dev), 500
         parent = path.rsplit("/", 1)[0] or "/"
         return redirect(url_for("index", path=parent))
 

@@ -1,1 +1,6 @@
 Flask>=3.0,<4.0
+pyfatfs>=1.1,<2.0
+# pyfatfs depends on PyFilesystem2 (`fs`), which still imports pkg_resources.
+# Setuptools >= 81 dropped that module, so we pin one version below the cliff.
+setuptools<81
+

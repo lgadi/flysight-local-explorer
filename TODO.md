@@ -48,19 +48,16 @@ that doesn't move the user experience.
       on card` and `Browse root` buttons. The JS poller unhides the
       row when a job transitions to terminal status during a page
       lifetime so users don't have to refresh.
-- [ ] **Touch button for folders with bogus 1980-00-00 dates.** When
-      the FlySight's RTC isn't set, the dirs it creates get stamped
-      with date 0 / time 0, and mdir renders that as `1980-00-00 0:00`.
-      Add a "fix date" action per affected folder that sets its mtime
-      to either today, or to a date parsed from the folder name when
-      it matches the `YY-MM-DD` convention FlySight uses (e.g.
-      `26-05-22` → `2026-05-22`). Implementation: mtools has no touch
-      command, so we'd write the FAT32 directory entry directly —
-      bytes 0x16-0x19 of the 32-byte entry hold mtime (date + time
-      encoded per the FAT spec). Walking the directory chain by hand
-      is doable but fiddly; alternatives are `pyfat` (Python lib) or
-      `fattools`. UI surfaces the action only for entries whose mtime
-      is the literal 1980-00-00 sentinel.
+- [x] **Touch button for folders with bogus 1980-00-00 dates.**
+      Implemented via `pyfatfs` (validated by a spike — see
+      [[flysight-local-explorer-touch-decision]]). UI shows a
+      "Fix → YYYY-MM-DD" button on directory rows whose mtime is the
+      literal `1980-00-00` sentinel. The date is parsed from the folder
+      name when it matches `YY-MM-DD` (e.g. `26-05-22` → `2026-05-22`),
+      otherwise falls back to today. The actual FAT mutation happens
+      in a tiny `_touch_worker.py` invoked via sudo so root surface
+      stays minimal; the worker grabs the global mtools op-lock to
+      avoid interleaving with mtools writes on the same device.
 - [x] **Move runtime knobs to a `config.toml` file.** Initial pass:
       `flysight/config.py` loads TOML from `./config.toml` →
       `~/.config/flysight-local-explorer/config.toml` and falls back
