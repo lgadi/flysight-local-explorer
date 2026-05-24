@@ -15,7 +15,12 @@ _WORKER = Path(__file__).parent / "_touch_worker.py"
 def touch(raw_node: str, fat_path: str, new_date: date) -> None:
     """Set mtime of `fat_path` on the FAT volume at `raw_node` to
     `new_date` at 00:00:00 UTC. Holds the global mtools op-lock to avoid
-    interleaving with mtools writes on the same device."""
+    interleaving with mtools writes on the same device.
+
+    Note: pyfatfs scans FAT metadata when opening the device. Over the
+    FlySight's USB 2.0 full-speed MSC link (~150 kB/s) this can take
+    several minutes on a 30 GB FAT32 partition, so the timeout is set
+    generously."""
     pw = sudo_auth.get()
     argv = [
         "sudo", "-S", "-p", "",
@@ -27,7 +32,7 @@ def touch(raw_node: str, fat_path: str, new_date: date) -> None:
             argv,
             input=(pw + "\n").encode(),
             capture_output=True,
-            timeout=60,
+            timeout=600,
         )
     if result.returncode != 0:
         err = result.stderr.decode(errors="replace").strip() or f"touch exited {result.returncode}"

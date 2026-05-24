@@ -37,11 +37,20 @@ def main(argv: list[str]) -> int:
         warnings.simplefilter("ignore", category=UserWarning)
         from pyfatfs.PyFatFS import PyFatFS
 
+    import time as _wall
+    t0 = _wall.monotonic()
     pfs = PyFatFS(device, read_only=False)
+    t_open = _wall.monotonic() - t0
+    print(f"touch: opened in {t_open:.2f}s", file=sys.stderr)
     try:
+        t1 = _wall.monotonic()
         pfs.setinfo(fat_path, {"details": {"modified": target.timestamp()}})
+        t_set = _wall.monotonic() - t1
+        print(f"touch: setinfo in {t_set:.2f}s", file=sys.stderr)
     finally:
+        t2 = _wall.monotonic()
         pfs.close()
+        print(f"touch: close in {_wall.monotonic() - t2:.2f}s", file=sys.stderr)
     return 0
 
 
