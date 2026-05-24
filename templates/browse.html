@@ -72,7 +72,11 @@
               <input type="text" name="dest" value="{{ default_dest }}" class="dest-input" title="mcopy will create '{{ e.name }}/' inside this directory">
               <button type="submit">Copy folder</button>
             </form>
-            {% if e.date == '1980-00-00' %}
+            {# FlySight 2 didn't exist before 2020, so any directory mtime
+               older than that is necessarily an unset-RTC sentinel
+               (1980-00-00, 1980-01-01, etc., depending on what coerced it).
+               String comparison on the YYYY-MM-DD format is well-defined. #}
+            {% if e.date and e.date < '2020-01-01' %}
               {% set fix_to = e.name | fix_date_for %}
               <form method="post" action="{{ url_for('touch') }}" class="inline confirm-touch">
                 <input type="hidden" name="path" value="{{ entry_path }}">

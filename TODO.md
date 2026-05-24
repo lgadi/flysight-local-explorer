@@ -48,16 +48,19 @@ that doesn't move the user experience.
       on card` and `Browse root` buttons. The JS poller unhides the
       row when a job transitions to terminal status during a page
       lifetime so users don't have to refresh.
-- [x] **Touch button for folders with bogus 1980-00-00 dates.**
+- [x] **Touch button for folders with bogus pre-2020 dates.**
       Implemented via `pyfatfs` (validated by a spike — see
       [[flysight-local-explorer-touch-decision]]). UI shows a
-      "Fix → YYYY-MM-DD" button on directory rows whose mtime is the
-      literal `1980-00-00` sentinel. The date is parsed from the folder
-      name when it matches `YY-MM-DD` (e.g. `26-05-22` → `2026-05-22`),
-      otherwise falls back to today. The actual FAT mutation happens
-      in a tiny `_touch_worker.py` invoked via sudo so root surface
-      stays minimal; the worker grabs the global mtools op-lock to
-      avoid interleaving with mtools writes on the same device.
+      "Fix → YYYY-MM-DD" button on directory rows whose mtime is
+      earlier than 2020-01-01 (covers both the original `1980-00-00`
+      FAT sentinel and the `1980-01-01` it becomes when round-tripped
+      through a non-FAT filesystem). The date is parsed from the
+      folder name when it matches `YY-MM-DD` (e.g. `26-05-22` →
+      `2026-05-22`), otherwise falls back to today. The actual FAT
+      mutation happens in a tiny `_touch_worker.py` invoked via sudo
+      so root surface stays minimal; the worker grabs the global
+      mtools op-lock to avoid interleaving with mtools writes on the
+      same device.
 - [x] **Move runtime knobs to a `config.toml` file.** Initial pass:
       `flysight/config.py` loads TOML from `./config.toml` →
       `~/.config/flysight-local-explorer/config.toml` and falls back
