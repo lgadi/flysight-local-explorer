@@ -92,6 +92,23 @@ def create_app() -> Flask:
         job_id = jobs.start_copy(dev.raw_node, path, dest)
         return redirect(url_for("jobs_view", highlight=job_id))
 
+    @app.route("/copy-bulk", methods=["POST"])
+    def copy_bulk():
+        items = request.form.getlist("selected")
+        dest = request.form.get("dest", "")
+        if not items or not dest:
+            return redirect(request.referrer or url_for("index"))
+        dev = device.detect_or_400()
+        started: list[str] = []
+        for item in items:
+            kind, _, path = item.partition(":")
+            if kind not in ("d", "f") or not path:
+                continue
+            started.append(jobs.start_copy(dev.raw_node, path, dest))
+        if not started:
+            return redirect(request.referrer or url_for("index"))
+        return redirect(url_for("jobs_view", highlight=started[-1]))
+
     @app.route("/upload", methods=["POST"])
     def upload():
         dest = request.form["dest"]  # path on the card, e.g. /CONFIG.TXT or /AUDIO/
@@ -108,6 +125,30 @@ def create_app() -> Flask:
         mtools.delete(dev.raw_node, path, recursive=recursive)
         parent = path.rsplit("/", 1)[0] or "/"
         return redirect(url_for("index", path=parent))
+
+    @app.route("/delete-bulk", methods=["POST"])
+    def delete_bulk():
+        items = request.form.getlist("selected")
+        return_to = request.form.get("return_to") or "/"
+        if not items:
+            return redirect(url_for("index", path=return_to))
+        dev = device.detect_or_400()
+        errors: list[str] = []
+        for item in items:
+            kind, _, path = item.partition(":")
+            if kind not in ("d", "f") or not path:
+                continue
+            try:
+                mtools.delete(dev.raw_node, path, recursive=(kind == "d"))
+            except mtools.MToolsError as exc:
+                errors.append(f"{path}: {exc}")
+        if errors:
+            return render_template(
+                "error.html",
+                message="Bulk delete completed with errors:\n\n" + "\n".join(errors),
+                device=dev,
+            ), 500
+        return redirect(url_for("index", path=return_to))
 
     @app.route("/eject", methods=["POST"])
     def eject():

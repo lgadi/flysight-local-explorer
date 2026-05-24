@@ -32,10 +32,15 @@
     <a href="{{ url_for('index', path=path, sort=key, dir=next_dir) }}">{{ label }} <span class="sort-indicator">{{ indicator }}</span></a>
   </th>
 {% endmacro %}
+<!-- Dummy form for bulk actions; row checkboxes and bar buttons reference it via form="bulk-form" so the per-row forms below stay independent. -->
+<form id="bulk-form" method="post"></form>
+<input type="hidden" name="return_to" value="{{ path }}" form="bulk-form">
+
 <section class="card">
   <table class="entries">
     <thead>
       <tr>
+        <th class="cb"><input type="checkbox" id="select-all" form="bulk-form" aria-label="select all"></th>
         {{ sort_header('name', 'Name') }}
         {{ sort_header('size', 'Size', 'num') }}
         {{ sort_header('date', 'Modified') }}
@@ -44,10 +49,16 @@
     </thead>
     <tbody>
       {% for e in entries %}
+      {% set entry_path = (path.rstrip('/') + '/' + e.name) if path != '/' else '/' + e.name %}
       <tr class="{{ 'dir' if e.is_dir else 'file' }}">
+        <td class="cb">
+          <input type="checkbox" class="row-select" name="selected" form="bulk-form"
+                 value="{{ 'd:' if e.is_dir else 'f:' }}{{ entry_path }}"
+                 aria-label="select {{ e.name }}">
+        </td>
         <td>
           {% if e.is_dir %}
-            <a href="{{ url_for('index', path=(path.rstrip('/') + '/' + e.name) if path != '/' else '/' + e.name) }}">{{ e.name }}/</a>
+            <a href="{{ url_for('index', path=entry_path) }}">{{ e.name }}/</a>
           {% else %}
             <span>{{ e.name }}</span>
           {% endif %}
@@ -55,7 +66,6 @@
         <td class="num">{{ '%d'|format(e.size) if e.size is not none else '—' }}</td>
         <td class="mtime">{{ e.date }} {{ e.time }}</td>
         <td class="actions">
-          {% set entry_path = (path.rstrip('/') + '/' + e.name) if path != '/' else '/' + e.name %}
           {% if e.is_dir %}
             <form method="post" action="{{ url_for('copy') }}" class="inline">
               <input type="hidden" name="path" value="{{ entry_path }}">
@@ -77,11 +87,19 @@
         </td>
       </tr>
       {% else %}
-      <tr><td colspan="4" class="muted">empty directory</td></tr>
+      <tr><td colspan="5" class="muted">empty directory</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </section>
+
+<div class="bulk-bar" hidden>
+  <span class="count">0 selected</span>
+  <button type="button" id="clear-selection" class="linklike">Clear</button>
+  <input type="text" name="dest" value="{{ default_dest }}" class="dest-input" form="bulk-form" aria-label="bulk copy destination">
+  <button type="submit" form="bulk-form" formaction="{{ url_for('copy_bulk') }}" class="bulk-copy">Copy selected to ↑</button>
+  <button type="submit" form="bulk-form" formaction="{{ url_for('delete_bulk') }}" class="bulk-delete danger">Delete selected</button>
+</div>
 
 <section class="card">
   <h2>Upload to <code>{{ path }}</code></h2>
@@ -130,6 +148,61 @@
       if (!confirm("Eject the card now? Any in-flight jobs will fail.")) e.preventDefault();
     });
   });
+
+  // Bulk-action selection management.
+  (function () {
+    const bulkForm = document.getElementById("bulk-form");
+    if (!bulkForm) return;
+    const checkboxes = Array.from(document.querySelectorAll("input.row-select"));
+    const selectAll = document.getElementById("select-all");
+    const bulkBar = document.querySelector(".bulk-bar");
+    const countEl = bulkBar.querySelector(".count");
+
+    function update() {
+      const selected = checkboxes.filter(cb => cb.checked);
+      const n = selected.length;
+      bulkBar.hidden = n === 0;
+      countEl.textContent = `${n} selected`;
+      if (n === 0) {
+        selectAll.checked = false;
+        selectAll.indeterminate = false;
+      } else {
+        selectAll.checked = n === checkboxes.length;
+        selectAll.indeterminate = n > 0 && n < checkboxes.length;
+      }
+    }
+
+    checkboxes.forEach(cb => cb.addEventListener("change", update));
+    selectAll.addEventListener("change", () => {
+      checkboxes.forEach(cb => cb.checked = selectAll.checked);
+      update();
+    });
+    const clearBtn = document.getElementById("clear-selection");
+    if (clearBtn) clearBtn.addEventListener("click", () => {
+      checkboxes.forEach(cb => cb.checked = false);
+      update();
+    });
+
+    bulkForm.addEventListener("submit", e => {
+      const submitter = e.submitter;
+      if (!submitter) return;
+      const selected = checkboxes.filter(cb => cb.checked);
+      if (selected.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      if (submitter.classList.contains("bulk-delete")) {
+        const files = selected.filter(cb => cb.value.startsWith("f:")).map(cb => cb.value.slice(2));
+        const dirs = selected.filter(cb => cb.value.startsWith("d:")).map(cb => cb.value.slice(2));
+        let msg = `Delete ${selected.length} selected item(s)?`;
+        if (files.length) msg += `\n\nFiles (${files.length}):\n  ${files.slice(0, 10).join("\n  ")}${files.length > 10 ? `\n  …+${files.length - 10} more` : ""}`;
+        if (dirs.length) msg += `\n\nFolders (will be deleted RECURSIVELY) (${dirs.length}):\n  ${dirs.slice(0, 10).join("\n  ")}${dirs.length > 10 ? `\n  …+${dirs.length - 10} more` : ""}`;
+        if (!confirm(msg)) e.preventDefault();
+      }
+    });
+
+    update();
+  })();
 
   // Job-completion toaster. Polls /jobs/snapshot.json and surfaces
   // transitions from in-flight to terminal as a small toast offering refresh.

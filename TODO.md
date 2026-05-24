@@ -26,12 +26,15 @@ that doesn't move the user experience.
 
 ## P2 — quality of life
 
-- [ ] **Bulk multi-select.** Add a checkbox to each entry row, a sticky
-      action bar with "Copy selected to…" and "Delete selected". Server-
-      side that's just looping the existing single-entry endpoints, but
-      it needs queueing so one user click doesn't kick off 30 mtools
-      processes at once. The existing `_op_lock` handles the serialisation;
-      we just need to dispatch the loop on a worker thread.
+- [x] **Bulk multi-select.** Each row gets a checkbox; selecting any
+      reveals a sticky action bar with a count, a destination input,
+      and `Copy selected to ↑` / `Delete selected` buttons. The
+      checkboxes and bar inputs all use `form="bulk-form"` so they
+      submit to `/copy-bulk` or `/delete-bulk` independently of the
+      per-row forms. Copy fans out one job per item, all serialising
+      naturally behind `_op_lock`. Delete is synchronous; the JS
+      confirmation shows files + folders separately and warns that
+      folder deletes are recursive.
 - [x] **User-configurable default copy destination.** Now driven by
       `[ui].default_download_root` in `config.toml`. See the config
       infrastructure item below.
