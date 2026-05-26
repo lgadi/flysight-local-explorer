@@ -99,6 +99,24 @@ def create_app() -> Flask:
         dev = device.detect_or_400()
         return mtools.stream_file(dev.raw_node, path)
 
+    @app.route("/preview")
+    def preview_file():
+        path = request.args["path"]
+        max_bytes = 256 * 1024  # 256 KB cap — fine for CONFIG/FLYSIGHT-sized text
+        dev = device.detect_or_400()
+        try:
+            data = mtools.read_file_bytes(dev.raw_node, path, max_bytes)
+        except mtools.MToolsError as exc:
+            return str(exc), 500, {"Content-Type": "text/plain; charset=utf-8"}
+        truncated = len(data) >= max_bytes
+        body = data.decode("utf-8", errors="replace")
+        return {
+            "path": path,
+            "bytes": len(data),
+            "truncated": truncated,
+            "content": body,
+        }
+
     @app.route("/copy", methods=["POST"])
     def copy():
         path = request.form["path"]

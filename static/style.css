@@ -231,6 +231,64 @@ article.job .actions code { background: rgba(0,0,0,0.05); padding: 0 4px; border
 #job-toast.relevant { background: #e3f0e0; border-color: #95c189; }
 #job-toast .msg { flex: 1; }
 
+.modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.modal[hidden] { display: none; }
+.preview-box {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  width: min(800px, 90vw);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.preview-box header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0;
+  background: none;
+  border: none;
+}
+.preview-title {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-weight: 600;
+  word-break: break-all;
+}
+.preview-close {
+  font-size: 20px;
+  padding: 0 10px;
+  line-height: 1;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--muted);
+}
+.preview-close:hover { color: var(--fg); }
+.preview-content {
+  background: #1f1f1f;
+  color: #e6e6e6;
+  padding: 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  flex: 1;
+  overflow: auto;
+  white-space: pre-wrap;
+  margin: 0;
+}
+.preview-meta { font-size: 12px; }
+
 pre { white-space: pre-wrap; word-wrap: break-word; }
 code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; background: #f0efe8; padding: 1px 4px; border-radius: 3px; }
 h1 { font-size: 18px; margin: 0 0 12px; }

@@ -7,6 +7,17 @@
   <button type="button" onclick="document.getElementById('job-toast').hidden = true">Dismiss</button>
 </div>
 
+<div id="preview-modal" class="modal" hidden>
+  <div class="preview-box">
+    <header>
+      <span class="preview-title"></span>
+      <button type="button" class="preview-close" aria-label="close">×</button>
+    </header>
+    <pre class="preview-content"></pre>
+    <footer class="preview-meta muted"></footer>
+  </div>
+</div>
+
 <section class="device-bar">
   <span class="label">{{ device.label }}</span>
   <span class="muted">{{ device.raw_node }} · {{ '%.1f GB'|format(device.size_bytes / 1e9) }}</span>
@@ -90,6 +101,9 @@
               <button type="submit" class="danger">Delete folder…</button>
             </form>
           {% else %}
+            {% if e.name.lower().endswith('.txt') %}
+              <button type="button" class="button preview-btn" data-path="{{ entry_path }}">View</button>
+            {% endif %}
             <a class="button" href="{{ url_for('download_file', path=entry_path) }}">Download</a>
             <form method="post" action="{{ url_for('delete') }}" class="inline confirm-simple">
               <input type="hidden" name="path" value="{{ entry_path }}">
@@ -167,6 +181,42 @@
       if (!confirm(`Set mtime of ${path} to ${newDate} 00:00 UTC?`)) e.preventDefault();
     });
   });
+
+  // Preview modal for text-file quick view.
+  (function () {
+    const modal = document.getElementById("preview-modal");
+    if (!modal) return;
+    const titleEl = modal.querySelector(".preview-title");
+    const contentEl = modal.querySelector(".preview-content");
+    const metaEl = modal.querySelector(".preview-meta");
+
+    async function openPreview(path) {
+      titleEl.textContent = path;
+      contentEl.textContent = "(loading…)";
+      metaEl.textContent = "";
+      modal.hidden = false;
+      try {
+        const r = await fetch(`/preview?path=${encodeURIComponent(path)}`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
+        contentEl.textContent = data.content;
+        metaEl.textContent = `${data.bytes} bytes${data.truncated ? " (truncated; download to see the full file)" : ""}`;
+      } catch (err) {
+        contentEl.textContent = `(error: ${err.message})`;
+      }
+    }
+
+    document.querySelectorAll("button.preview-btn").forEach(b => {
+      b.addEventListener("click", () => openPreview(b.dataset.path));
+    });
+    modal.querySelector(".preview-close").addEventListener("click", () => modal.hidden = true);
+    modal.addEventListener("click", e => {
+      if (e.target === modal) modal.hidden = true;
+    });
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape" && !modal.hidden) modal.hidden = true;
+    });
+  })();
 
   // Bulk-action selection management.
   (function () {

@@ -184,6 +184,39 @@ def _short_to_dotted(sname: str) -> str:
     return sname
 
 
+def read_file_bytes(raw_node: str, path: str, max_bytes: int) -> bytes:
+    """Read up to `max_bytes` bytes of a file off the card via mcopy stdout.
+    Used for the preview endpoint; caller closes the read side as soon as
+    enough bytes arrive so mcopy is killed via SIGPIPE on its next write."""
+    fat_path = _fat_file_path(path)
+    pw = sudo_auth.get()
+    argv = _sudo_argv(["mcopy", "-i", raw_node, "-n", fat_path, "-"])
+    with _op_lock:
+        proc = subprocess.Popen(
+            argv,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        assert proc.stdin and proc.stdout
+        try:
+            proc.stdin.write((pw + "\n").encode())
+            proc.stdin.close()
+            buf = bytearray()
+            while len(buf) < max_bytes:
+                chunk = proc.stdout.read(min(8192, max_bytes - len(buf)))
+                if not chunk:
+                    break
+                buf.extend(chunk)
+        finally:
+            try:
+                proc.stdout.close()
+            except OSError:
+                pass
+            proc.wait()
+    return bytes(buf)
+
+
 def stream_file(raw_node: str, path: str):
     """Stream a single file off the card to the browser via mcopy stdout."""
     fat_path = _fat_file_path(path)

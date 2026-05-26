@@ -102,10 +102,11 @@ that doesn't move the user experience.
 - [ ] **Handle multiple FlySights connected at once.** Device picker
       in the header. Today we just take the first FAT partition labeled
       `FLYSIGHT` we find.
-- [ ] **Inline file previews.** Mostly TRACK.CSV / SENSOR.CSV as a small
-      tabular view, CONFIG.TXT as text, and .UBX as a hex dump
-      (first/last N KB). Needs a `/preview?path=&range=` endpoint that
-      streams via `mcopy ... -` with a byte cap.
+- [ ] **Inline file previews — CSV and UBX (TXT already shipped).** TXT
+      preview ships as `View` button → modal in the browse view. Still
+      open: tabular view for TRACK.CSV / SENSOR.CSV, and a hex dump for
+      .UBX showing first/last N KB. The `/preview` endpoint exists and
+      could host both with a `format=` parameter.
 
 ## P4 — engineering
 
