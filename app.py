@@ -230,6 +230,44 @@ def create_app() -> Flask:
     def jobs_snapshot():
         return {"jobs": jobs.snapshot()}
 
+    @app.route("/jobs/events")
+    def jobs_events():
+        """Server-Sent Events stream of job-snapshot updates.
+
+        Emits a `data:` event whenever the snapshot changes, and a
+        comment-only line every ~25s as a keepalive so any intermediate
+        proxy doesn't kill the idle connection. Internal poll interval
+        is 1s; the actual HTTP connection stays open for the page
+        lifetime."""
+        import json
+        import time
+
+        from flask import Response, stream_with_context
+
+        def gen():
+            last_payload = None
+            last_heartbeat = time.time()
+            while True:
+                payload = json.dumps({"jobs": jobs.snapshot()})
+                now = time.time()
+                if payload != last_payload:
+                    yield f"data: {payload}\n\n"
+                    last_payload = payload
+                    last_heartbeat = now
+                elif now - last_heartbeat > 25:
+                    yield ": keepalive\n\n"
+                    last_heartbeat = now
+                time.sleep(1)
+
+        return Response(
+            stream_with_context(gen()),
+            mimetype="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+            },
+        )
+
     return app
 
 

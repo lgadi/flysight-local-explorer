@@ -273,8 +273,11 @@
     update();
   })();
 
-  // Job-completion toaster. Polls /jobs/snapshot.json and surfaces
+  // Job-completion toaster. Subscribes to /jobs/events (SSE) and surfaces
   // transitions from in-flight to terminal as a small toast offering refresh.
+  // SSE keeps a single long-lived HTTP connection rather than polling
+  // /jobs/snapshot.json every few seconds — friendlier to host-side
+  // request-rate limiters and corporate browser extensions.
   (function () {
     const TERMINAL = new Set(["done", "error"]);
     const known = new Map();    // job_id -> last seen status
@@ -302,21 +305,30 @@
       return fp === currentPath || fp === currentPath + "/" || fp.startsWith(currentPath === "/" ? "/" : currentPath + "/");
     }
 
-    function poll() {
-      fetch("/jobs/snapshot.json").then(r => r.ok ? r.json() : null).then(data => {
-        if (!data) return;
-        for (const j of data.jobs) {
-          const prev = known.get(j.id);
-          known.set(j.id, j.status);
-          if (!notified.has(j.id) && TERMINAL.has(j.status) && (prev === undefined || !TERMINAL.has(prev))) {
-            notified.add(j.id);
-            completed.push({id: j.id, kind: j.kind, status: j.status, relevant: isRelevant(j)});
-          }
+    function processSnapshot(data) {
+      if (!data || !data.jobs) return;
+      for (const j of data.jobs) {
+        const prev = known.get(j.id);
+        known.set(j.id, j.status);
+        if (!notified.has(j.id) && TERMINAL.has(j.status) && (prev === undefined || !TERMINAL.has(prev))) {
+          notified.add(j.id);
+          completed.push({id: j.id, kind: j.kind, status: j.status, relevant: isRelevant(j)});
         }
-        showToast();
-      }).catch(() => {}).finally(() => setTimeout(poll, 4000));
+      }
+      showToast();
     }
-    poll();
+
+    const evt = new EventSource("/jobs/events");
+    evt.addEventListener("message", e => {
+      try {
+        processSnapshot(JSON.parse(e.data));
+      } catch (err) {
+        // ignore malformed
+      }
+    });
+    // EventSource handles reconnection on errors automatically with
+    // exponential-ish backoff; we just log and keep the page alive.
+    evt.addEventListener("error", () => { /* auto-reconnect */ });
   })();
 </script>
 {% endblock %}
