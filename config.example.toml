@@ -17,7 +17,7 @@
 
 [server]
 # host = "127.0.0.1"   # bind address — keep localhost unless you know what you're doing
-# port = 5000
+# port = 5050
 
 [ui]
 # Folder under which each download lands in a timestamped subdirectory.

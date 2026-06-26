@@ -49,11 +49,17 @@ source .venv/bin/activate.fish
 python app.py
 ```
 
-Then open <http://127.0.0.1:5000/> in your browser. The first action you
+Then open <http://127.0.0.1:5050/> in your browser. The first action you
 take will prompt for your macOS account password — this is required so
 the app can `sudo mcopy` / `sudo mdir` against the raw block device. The
 password is kept in process memory only, never written to disk, and is
 discarded when you stop the server.
+
+To use a different port without editing config:
+
+```
+python app.py --port 5051
+```
 
 ## Configuration
 

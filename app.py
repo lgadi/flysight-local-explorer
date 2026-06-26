@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import secrets
 import subprocess
 
@@ -293,6 +294,30 @@ def _default_dest_for(_path: str) -> str:
     return os.path.join(root, stamp)
 
 
+def _port(value: str) -> int:
+    try:
+        port = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("port must be an integer") from exc
+    if not 1 <= port <= 65535:
+        raise argparse.ArgumentTypeError("port must be between 1 and 65535")
+    return port
+
+
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run the FlySight local explorer web app.")
+    parser.add_argument(
+        "-p",
+        "--port",
+        type=_port,
+        default=None,
+        help="override the configured server port",
+    )
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
+    args = _parse_args()
     cfg = config.get()
-    create_app().run(host=cfg.server.host, port=cfg.server.port, debug=False)
+    port = args.port if args.port is not None else cfg.server.port
+    create_app().run(host=cfg.server.host, port=port, debug=False)
