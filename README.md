@@ -24,6 +24,8 @@ and delete entries without leaving the browser.
 ```
 git clone <your-fork>
 cd flysight-local-explorer
+brew install mtools
+mdir -V
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```

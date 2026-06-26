@@ -89,8 +89,11 @@ that doesn't move the user experience.
 
 ## P3 — robustness
 
-- [ ] **Friendly errors when mtools isn't installed** or when sudo is
-      revoked mid-session. Currently surfaces as a raw `MToolsError`.
+- [x] **Friendly errors when mtools isn't installed.** Startup now checks
+      for the required `mtools` commands and prints the Homebrew install
+      command if any are missing.
+- [ ] **Friendly errors when sudo is revoked mid-session.** Currently
+      surfaces as a raw `MToolsError`.
 - [ ] **Session timeout for the cached sudo password.** Right now it
       lives forever until process exit. A 30-minute idle timeout would
       match macOS's own sudo policy and reduce the window if someone

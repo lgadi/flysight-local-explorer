@@ -2,11 +2,15 @@ from __future__ import annotations
 
 import argparse
 import secrets
+import shutil
 import subprocess
 
 from flask import Flask, redirect, render_template, request, url_for
 
 from flysight import config, device, fat_ops, jobs, mtools, sudo_auth
+
+
+REQUIRED_MTOOLS = ("mdir", "mcopy", "mdel", "mdeltree")
 
 
 def create_app() -> Flask:
@@ -316,8 +320,22 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _check_dependencies() -> None:
+    missing = [name for name in REQUIRED_MTOOLS if shutil.which(name) is None]
+    if not missing:
+        return
+    commands = ", ".join(missing)
+    raise SystemExit(
+        f"Missing required mtools command(s): {commands}\n"
+        "Install mtools with Homebrew, then restart this app:\n\n"
+        "  brew install mtools\n\n"
+        "If mtools is already installed, make sure Homebrew's bin directory is on PATH."
+    )
+
+
 if __name__ == "__main__":
     args = _parse_args()
+    _check_dependencies()
     cfg = config.get()
     port = args.port if args.port is not None else cfg.server.port
     create_app().run(host=cfg.server.host, port=port, debug=False)
