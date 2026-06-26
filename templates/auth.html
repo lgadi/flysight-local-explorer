@@ -13,7 +13,16 @@
       Password
       <input type="password" name="password" autofocus required autocomplete="current-password">
     </label>
-    <button type="submit">Unlock</button>
+    <button type="submit" id="unlock-btn">Unlock</button>
   </form>
 </section>
+{% endblock %}
+{% block scripts %}
+<script>
+  document.querySelector('form').addEventListener('submit', function() {
+    var btn = document.getElementById('unlock-btn');
+    btn.disabled = true;
+    btn.textContent = 'Verifying…';
+  });
+</script>
 {% endblock %}
